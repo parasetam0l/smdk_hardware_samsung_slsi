@@ -17,7 +17,6 @@
 #ifndef _LIB_ION_H_
 #define _LIB_ION_H_
 
-#define ION_HEAP_SYSTEM_MASK            (1 << 0)
 #define ION_HEAP_EXYNOS_CONTIG_MASK     (1 << 4)
 #define ION_EXYNOS_VIDEO_EXT_MASK       (1 << 31)
 #define ION_EXYNOS_VIDEO_EXT2_MASK      (1 << 29)
@@ -50,5 +49,9 @@ enum {
 #define EXYNOS_ION_HEAP_GPU_CRC             (1 << ION_EXYNOS_HEAP_ID_GPU_CRC)
 #define EXYNOS_ION_HEAP_GPU_BUFFER          (1 << ION_EXYNOS_HEAP_ID_GPU_BUFFER)
 #define EXYNOS_ION_HEAP_CAMERA              (1 << ION_EXYNOS_HEAP_ID_CAMERA)
+
+#define ION_FLAG_NOZEROED 8
+#define ION_FLAG_PROTECTED 16
+#define ION_FLAG_SYNC_FORCE 32
 
 #endif /* _LIB_ION_H_ */

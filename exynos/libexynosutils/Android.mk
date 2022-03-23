@@ -20,9 +20,10 @@ LOCAL_SHARED_LIBRARIES := liblog libutils libcutils
 
 LOCAL_CFLAGS += -DEXYNOS_PLATFORM_ON_ANDROID
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include
-LOCAL_C_INCLUDES += framework/base/include
+LOCAL_C_INCLUDES := \
+	$(TOP)/hardware/samsung_slsi/exynos/include \
+	$(TOP)/hardware/samsung_slsi/exynos/kernel-3.18-headers \
+	$(TOP)/framework/base/include
 
 LOCAL_SRC_FILES := ExynosMutex.cpp \
 		   Exynos_log.c

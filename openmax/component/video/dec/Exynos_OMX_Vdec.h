@@ -174,7 +174,7 @@ typedef struct _EXYNOS_OMX_VIDEODEC_COMPONENT
 extern "C" {
 #endif
 
-inline void Exynos_UpdateFrameSize(OMX_COMPONENTTYPE *pOMXComponent);
+void Exynos_UpdateFrameSize(OMX_COMPONENTTYPE *pOMXComponent);
 void Exynos_Output_SetSupportFormat(EXYNOS_OMX_BASECOMPONENT *pExynosComponent);
 OMX_ERRORTYPE Exynos_ResolutionUpdate(OMX_COMPONENTTYPE *pOMXComponent);
 void Exynos_SetReorderTimestamp(EXYNOS_OMX_BASECOMPONENT *pExynosComponent, OMX_U32 *nIndex, OMX_TICKS timeStamp, OMX_U32 nFlags);

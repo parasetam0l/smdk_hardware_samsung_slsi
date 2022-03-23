@@ -1,7 +1,7 @@
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
-include frameworks/av/media/libstagefright/codecs/common/Config.mk
+#include frameworks/av/media/libstagefright/codecs/common/Config.mk
 
 LOCAL_MODULE_TAGS := optional
 

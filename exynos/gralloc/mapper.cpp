@@ -364,9 +364,9 @@ int gralloc_lock(gralloc_module_t const* module,
     *vaddr = INT_TO_PTR(hnd->base);
 
     if (hnd->format == HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SPN)
-        vaddr[1] = vaddr[0] + (hnd->stride * hnd->vstride) + ext_size;
+        vaddr[1] = (int*)vaddr[0] + (hnd->stride * hnd->vstride) + ext_size;
     else if (hnd->format == HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SPN_S10B)
-        vaddr[1] = vaddr[0] + (hnd->stride * hnd->vstride) + ext_size + (ALIGN(hnd->width / 4, 16) * hnd->vstride) + 64;
+        vaddr[1] = (int*)vaddr[0] + (hnd->stride * hnd->vstride) + ext_size + (ALIGN(hnd->width / 4, 16) * hnd->vstride) + 64;
 
 #ifdef USES_EXYNOS_CRC_BUFFER_ALLOC
     if (!gralloc_crc_allocation_check(hnd->format, hnd->width, hnd->height, hnd->flags))

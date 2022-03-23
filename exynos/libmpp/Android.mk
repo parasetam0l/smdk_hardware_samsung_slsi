@@ -19,8 +19,8 @@ LOCAL_PRELINK_MODULE := false
 LOCAL_SHARED_LIBRARIES := liblog libutils libcutils libexynosutils libexynosv4l2
 
 LOCAL_C_INCLUDES += \
-	$(LOCAL_PATH)/../include \
 	$(TOP)/hardware/samsung_slsi/exynos/include \
+    $(TOP)/hardware/samsung_slsi/exynos/kernel-3.18-headers \
 	$(TOP)/hardware/samsung_slsi/exynos/libexynosutils \
 	$(TOP)/hardware/samsung_slsi/exynos3/include \
 	$(TOP)/hardware/samsung_slsi/exynos4/include \

@@ -8,9 +8,10 @@ LOCAL_SRC_FILES := \
 	enc/ExynosVideoEncoder.c
 
 LOCAL_C_INCLUDES := \
-	$(LOCAL_PATH)/include \
-	$(TOP)/hardware/samsung_slsi/exynos/include \
-	$(TOP)/hardware/samsung_slsi/$(TARGET_BOARD_PLATFORM)/include \
+    $(LOCAL_PATH)/include \
+    $(TOP)/hardware/samsung_slsi/exynos/include \
+    $(TOP)/hardware/samsung_slsi/exynos7570/include \
+    $(TOP)/hardware/samsung_slsi/exynos/kernel-3.18-headers \
 	$(TOP)/system/core/libion/include
 
 ifeq ($(BOARD_USE_KHRONOS_OMX_HEADER), true)

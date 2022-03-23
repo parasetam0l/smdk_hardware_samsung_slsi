@@ -58,14 +58,12 @@ void ExynosDisplay::dumpConfig(decon_win_config &c)
         DISPLAY_LOGD(eDebugWinConfig, "\t\tfd = %d, dma = %u "
                 "src_f_w = %u, src_f_h = %u, src_x = %d, src_y = %d, src_w = %u, src_h = %u, "
                 "dst_f_w = %u, dst_f_h = %u, dst_x = %d, dst_y = %d, dst_w = %u, dst_h = %u, "
-                "format = %u, blending = %u, protection = %u, transparent(x:%d, y:%d, w:%d, h:%d), "
-                "block(x:%d, y:%d, w:%d, h:%d)",
+                "format = %u, blending = %u, protection = %u, transparent(x:%d, y:%d, w:%d, h:%d)",
                 c.fd_idma[0], c.idma_type,
                 c.src.f_w, c.src.f_h, c.src.x, c.src.y, c.src.w, c.src.h,
                 c.dst.f_w, c.dst.f_h, c.dst.x, c.dst.y, c.dst.w, c.dst.h,
                 c.format, c.blending, c.protection,
-                c.transparent_area.x, c.transparent_area.y, c.transparent_area.w, c.transparent_area.h,
-                c.covered_opaque_area.x, c.covered_opaque_area.y, c.covered_opaque_area.w, c.covered_opaque_area.h);
+                c.transparent_area.x, c.transparent_area.y, c.transparent_area.w, c.transparent_area.h);
     }
 }
 
@@ -78,14 +76,12 @@ void ExynosDisplay::dumpConfig(decon_win_config &c, android::String8& result)
         result.appendFormat("\t\tfd = %d, dma = %u "
                 "src_f_w = %u, src_f_h = %u, src_x = %d, src_y = %d, src_w = %u, src_h = %u, "
                 "dst_f_w = %u, dst_f_h = %u, dst_x = %d, dst_y = %d, dst_w = %u, dst_h = %u, "
-                "format = %u, blending = %u, protection = %u, transparent(x:%d, y:%d, w:%d, h:%d), "
-                "block(x:%d, y:%d, w:%d, h:%d)\n",
+                "format = %u, blending = %u, protection = %u, transparent(x:%d, y:%d, w:%d, h:%d)",
                 c.fd_idma[0], c.idma_type,
                 c.src.f_w, c.src.f_h, c.src.x, c.src.y, c.src.w, c.src.h,
                 c.dst.f_w, c.dst.f_h, c.dst.x, c.dst.y, c.dst.w, c.dst.h,
                 c.format, c.blending, c.protection,
-                c.transparent_area.x, c.transparent_area.y, c.transparent_area.w, c.transparent_area.h,
-                c.covered_opaque_area.x, c.covered_opaque_area.y, c.covered_opaque_area.w, c.covered_opaque_area.h);
+                c.transparent_area.x, c.transparent_area.y, c.transparent_area.w, c.transparent_area.h);
     }
 }
 
@@ -117,10 +113,14 @@ enum decon_pixel_format halFormatToS3CFormat(int format)
     case HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SP_M_PRIV:
     case HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SP_M_S10B:
         return DECON_PIXEL_FORMAT_NV12M;
+#ifdef DECON_PIXEL_FORMAT_NV12N_10B
     case HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SPN_S10B:
         return DECON_PIXEL_FORMAT_NV12N_10B;
+#endif
+#ifdef DECON_PIXEL_FORMAT_NV12N
     case HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SPN:
         return DECON_PIXEL_FORMAT_NV12N;
+#endif
     default:
         return DECON_PIXEL_FORMAT_MAX;
     }
@@ -153,10 +153,14 @@ int S3CFormatToHalFormat(enum decon_pixel_format format)
     /* HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SP_M_PRIV, HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SP_M_S10B */
     case DECON_PIXEL_FORMAT_NV12M:
         return HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SP_M;
+#ifdef DECON_PIXEL_FORMAT_NV12N
     case DECON_PIXEL_FORMAT_NV12N:
         return HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SPN;
+#endif
+#ifdef DECON_PIXEL_FORMAT_NV12N_10B
     case DECON_PIXEL_FORMAT_NV12N_10B:
         return HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SPN_S10B;
+#endif
     default:
         return -1;
     }
@@ -423,7 +427,7 @@ int ExynosDisplay::set(hwc_display_contents_1_t *contents)
     if (mType != EXYNOS_SECONDARY_DISPLAY)
     {
 #endif
-    if (err)
+    if (err < 0)
         fence = clearDisplay();
 
     if (fence == 0) {
@@ -452,6 +456,19 @@ int ExynosDisplay::set(hwc_display_contents_1_t *contents)
     }
 #endif
 
+    uint32_t rectCount = 0;
+    for (size_t i = 0; i < contents->numHwLayers; i++) {
+        hwc_layer_1_t &layer = contents->hwLayers[i];
+        if (layer.handle) {
+            private_handle_t *handle = private_handle_t::dynamicCast(layer.handle);
+            if (handle->format == HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SP_M_PRIV
+                    && rectCount < mOriginFrect.size())
+                layer.sourceCropf = mOriginFrect[rectCount++];
+        }
+    }
+    mOriginFrect.clear();
+    mBackUpFrect.clear();
+
     return err;
 }
 
@@ -465,6 +482,15 @@ void ExynosDisplay::dupFence(int fence, hwc_display_contents_1_t *contents)
         private_handle_t *handle = NULL;
         if (layer.handle != NULL)
             handle = private_handle_t::dynamicCast(layer.handle);
+
+        /* If Fb is not needed and this is a HWC buffer (function reverse engineered from S7 libexynosdisplay.so) */
+        if(!mFbNeeded && layer.compositionType == HWC_FRAMEBUFFER_TARGET) {
+            /* Close the acquire fence Fd if it is valid */
+            if(layer.acquireFenceFd >= 0) {
+                close(layer.acquireFenceFd);
+                layer.acquireFenceFd = -1;
+            }
+        }
 
         if ((mVirtualOverlayFlag == true) && (layer.compositionType == HWC_OVERLAY) &&
                 ((handle != NULL) && (getDrmMode(handle->flags) == NO_DRM)) &&
@@ -736,7 +762,7 @@ int ExynosDisplay::clearDisplay()
 
 int ExynosDisplay::getCompModeSwitch()
 {
-    unsigned int tot_win_size = 0, updateFps = 0;
+    unsigned int updateFps = 0;
     unsigned int lcd_size = this->mXres * this->mYres;
     uint64_t TimeStampDiff;
     float Temp;
@@ -876,7 +902,6 @@ void ExynosDisplay::getIDMAMinSize(hwc_layer_1_t __unused &layer, int *w, int *h
 bool ExynosDisplay::isOverlaySupported(hwc_layer_1_t &layer, size_t index, bool useVPPOverlay,
         ExynosMPPModule** supportedInternalMPP, ExynosMPPModule** supportedExternalMPP)
 {
-    int mMPPIndex = 0;
     int ret = 0;
     ExynosMPPModule* transitionInternalMPP = NULL;
     private_handle_t *handle = NULL;
@@ -987,7 +1012,7 @@ bool ExynosDisplay::isOverlaySupported(hwc_layer_1_t &layer, size_t index, bool 
             (WIDTH(extMPPOutLayer.displayFrame) % mCheckIntMPP->getCropWidthAlign(layer) != 0 ||
              HEIGHT(extMPPOutLayer.displayFrame) % mCheckIntMPP->getCropHeightAlign(layer) != 0 ||
              !(mCheckIntMPP->isFormatSupportedByMPP(handleFormat)) ||
-             !(mCheckIntMPP->isCSCSupportedByMPP(handleFormat, HAL_PIXEL_FORMAT_RGBX_8888, layer.dataSpace))))
+             !(mCheckIntMPP->isCSCSupportedByMPP(handleFormat, HAL_PIXEL_FORMAT_RGBX_8888, 1))))
             dst_format = mExternalMPPDstFormat;
 
         /* extMPPOutLayer is output of ExtMPP */
@@ -1197,11 +1222,13 @@ void ExynosDisplay::configureHandle(private_handle_t *handle, size_t index,
     if (handle == NULL)
         return;
 
+#ifdef HWC_SET_OPAQUE
     if ((layer.flags & HWC_SET_OPAQUE) && handle && (handle->format == HAL_PIXEL_FORMAT_RGBA_8888)
             && (layer.compositionType == HWC_OVERLAY)) {
         handle->format = HAL_PIXEL_FORMAT_RGBX_8888;
         isOpaque = 1;
     }
+#endif
     hwc_frect_t &sourceCrop = layer.sourceCropf;
     hwc_rect_t &displayFrame = layer.compositionType == HWC_FRAMEBUFFER_TARGET ? mFbUpdateRegion : layer.displayFrame;
     int32_t blending = layer.blending;
@@ -1374,12 +1401,12 @@ void ExynosDisplay::configureHandle(private_handle_t *handle, size_t index,
         }
     }
     /* transparent region coordinates is on source buffer */
-    getLayerRegion(layer, cfg.transparent_area, eTransparentRegion);
+    //getLayerRegion(layer, cfg.transparent_area, eTransparentRegion);
     cfg.transparent_area.x += cfg.dst.x;
     cfg.transparent_area.y += cfg.dst.y;
 
     /* opaque region coordinates is on screen */
-    getLayerRegion(layer, cfg.covered_opaque_area, eCoveredOpaqueRegion);
+    //getLayerRegion(layer, cfg.covered_opaque_area, eCoveredOpaqueRegion);
 
     if (isOpaque && (handle->format == HAL_PIXEL_FORMAT_RGBX_8888)) {
         handle->format = HAL_PIXEL_FORMAT_RGBA_8888;
@@ -1501,7 +1528,7 @@ int ExynosDisplay::handleWindowUpdate(hwc_display_contents_1_t __unused *content
 
 
     char value[PROPERTY_VALUE_MAX];
-    property_get("debug.hwc.winupdate", value, NULL);
+    property_get("debug.hwc.winupdate", value, "1");
 
     if (!(!strcmp(value, "1") || !strcmp(value, "true")))
         return -eWindowUpdateDisabled;
@@ -1785,18 +1812,21 @@ int ExynosDisplay::handleWindowUpdate(hwc_display_contents_1_t __unused *content
         (config[winUpdateInfoIdx].dst.w != (uint32_t)mXres) || (config[winUpdateInfoIdx].dst.h != (uint32_t)mXres)) {
         for (size_t i = 0; i < NUM_HW_WINDOWS; i++) {
             memset(&config[i].transparent_area, 0, sizeof(config[i].transparent_area));
+#ifdef HWC_SET_OPAQUE
             memset(&config[i].covered_opaque_area, 0, sizeof(config[i].covered_opaque_area));
+#endif
         }
     }
 
     return 1;
 }
 
-void ExynosDisplay::getLayerRegion(hwc_layer_1_t &layer, decon_win_rect &rect_area, uint32_t regionType)
+void ExynosDisplay::getLayerRegion(hwc_layer_1_t &layer __unused, decon_win_rect &rect_area, uint32_t regionType)
 {
     hwc_rect_t const *hwcRects = NULL;
     unsigned int numRects = 0;
     switch (regionType) {
+#if 0
     case eTransparentRegion:
         hwcRects = layer.transparentRegion.rects;
         numRects = layer.transparentRegion.numRects;
@@ -1805,6 +1835,7 @@ void ExynosDisplay::getLayerRegion(hwc_layer_1_t &layer, decon_win_rect &rect_ar
         hwcRects = layer.coveredOpaqueRegion.rects;
         numRects = layer.coveredOpaqueRegion.numRects;
         break;
+#endif
     default:
         ALOGE("%s:: Invalid regionType (%d)", __func__, regionType);
         return;
@@ -1899,7 +1930,7 @@ int ExynosDisplay::postFrame(hwc_display_contents_1_t* contents)
         return -1;
     }
     struct decon_win_config *config = mWinData->config;
-    int win_map = 0;
+
     int tot_ovly_wins = 0;
     uint32_t rectCount = 0;
     int ret = 0;
@@ -1932,20 +1963,18 @@ int ExynosDisplay::postFrame(hwc_display_contents_1_t* contents)
 
         if ((layer.flags & HWC_SKIP_RENDERING) ||
             ((layer.compositionType == HWC_OVERLAY) &&
-             ((window_index < 0) || (window_index >= NUM_HW_WINDOWS)))) {
+             ((window_index < 0) || (window_index >= (int32_t)NUM_HW_WINDOWS)))) {
             if (layer.acquireFenceFd >= 0)
                 close(layer.acquireFenceFd);
             layer.acquireFenceFd = -1;
             layer.releaseFenceFd = -1;
 
-            if ((window_index < 0) || (window_index >= NUM_HW_WINDOWS)) {
+            if ((window_index < 0) || (window_index >= (int32_t)NUM_HW_WINDOWS)) {
                 android::String8 result;
                 DISPLAY_LOGE("window of layer %d was not assigned (window_index: %d)", i, window_index);
                 dumpContents(result, contents);
-                ALOGE(result.string());
                 result.clear();
                 dumpLayerInfo(result);
-                ALOGE(result.string());
             }
             continue;
         }
@@ -2048,13 +2077,10 @@ int ExynosDisplay::postFrame(hwc_display_contents_1_t* contents)
                     result.appendFormat("window %zu configuration:\n", i);
                     dumpConfig(config[i], result);
                 }
-                ALOGE(result.string());
                 result.clear();
                 dumpContents(result, contents);
-                ALOGE(result.string());
                 result.clear();
                 dumpLayerInfo(result);
-                ALOGE(result.string());
         }
 
         if (checkConfigChanged(*mWinData, mLastConfigData) == false) {
@@ -2089,18 +2115,6 @@ int ExynosDisplay::postFrame(hwc_display_contents_1_t* contents)
         layer.acquireFenceFd = -1;
         layer.releaseFenceFd = -1;
     }
-    rectCount = 0;
-    for (size_t i = 0; i < contents->numHwLayers; i++) {
-        hwc_layer_1_t &layer = contents->hwLayers[i];
-        if (layer.handle) {
-            private_handle_t *handle = private_handle_t::dynamicCast(layer.handle);
-            if (handle->format == HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SP_M_PRIV
-                    && rectCount < mOriginFrect.size())
-                layer.sourceCropf = mOriginFrect[rectCount++];
-        }
-    }
-    mOriginFrect.clear();
-    mBackUpFrect.clear();
 
     if (!this->mVirtualOverlayFlag && (ret >= 0))
         this->mLastFbWindow = mFbWindow;
@@ -2111,7 +2125,6 @@ int ExynosDisplay::postFrame(hwc_display_contents_1_t* contents)
 void ExynosDisplay::skipStaticLayers(hwc_display_contents_1_t* contents)
 {
     mVirtualOverlayFlag = 0;
-    int win_map = 0;
     int fbIndex = contents->numHwLayers - 1;
 
     if (!mHwc->hwc_ctrl.skip_static_layer_mode)
@@ -2262,7 +2275,6 @@ void ExynosDisplay::determineYuvOverlay(hwc_display_contents_1_t *contents)
         ExynosMPPModule* supportedExternalMPP = NULL;
         hwc_layer_1_t &layer = contents->hwLayers[i];
         useVPPOverlayFlag = false;
-        hwc_frect_t origin;
         if (layer.handle) {
             private_handle_t *handle = private_handle_t::dynamicCast(layer.handle);
 
@@ -2559,7 +2571,6 @@ void ExynosDisplay::determineBandwidthSupport(hwc_display_contents_1_t *contents
     bool changed;
     this->mBypassSkipStaticLayer = false;
     unsigned int cannotComposeFlag = 0;
-    int internalDMAsUsed = 0;
     int retry = 0;
     int fbIndex = contents->numHwLayers - 1;
 
@@ -2946,7 +2957,6 @@ void ExynosDisplay::assignWindows(hwc_display_contents_1_t *contents)
                     }
                 } else {
                     DISPLAY_LOGD(eDebugResourceAssigning, "%u layer can't use internalDMA, isProcessingRequired(%d)", i, isProcessingRequired(layer));
-                    unsigned int dmaType = 0;
                     mLayerInfos[i]->mWindowIndex = nextWindow;
                     if (mLayerInfos[i]->mInternalMPP != NULL) {
                         mLayerInfos[i]->mInternalMPP->setDisplay(this);
@@ -3040,7 +3050,7 @@ int ExynosDisplay::postMPPM2M(hwc_layer_1_t &layer, struct decon_win_config *con
         (isFormatRgb(handle->format) ||
         (bothMPPUsed && !isFormatRgb(handle->format) &&
          exynosInternalMPP != NULL &&
-         exynosInternalMPP->isCSCSupportedByMPP(handle->format, HAL_PIXEL_FORMAT_RGBX_8888, layer.dataSpace) &&
+         exynosInternalMPP->isCSCSupportedByMPP(handle->format, HAL_PIXEL_FORMAT_RGBX_8888, 1) &&
          exynosInternalMPP->isFormatSupportedByMPP(handle->format) &&
          WIDTH(extMPPOutLayer.displayFrame) % exynosInternalMPP->getCropWidthAlign(layer) == 0 &&
          HEIGHT(extMPPOutLayer.displayFrame) % exynosInternalMPP->getCropHeightAlign(layer) == 0)))
@@ -3157,7 +3167,6 @@ bool ExynosDisplay::isBothMPPProcessingRequired(hwc_layer_1_t &layer)
                           ((dstH > srcH * maxUpscaleExt) && (dstH <= srcH * maxUpscaleExt * maxUpscaleInt));
 
     int maxDownscaleExt = mExternalMPPs[0]->getMaxDownscale(layer);
-    int maxDownscaleInt = mCheckIntMPP->getMaxDownscale(layer);
 
     needDoubleOperation |= ((dstW < srcW / maxDownscaleExt) && (dstW >= srcW / (maxDownscaleExt * maxDownscaleExt))) ||
                           ((dstH < srcH / maxDownscaleExt) && (dstH >= srcH / (maxDownscaleExt * maxDownscaleExt)));
@@ -3260,13 +3269,13 @@ bool ExynosDisplay::isBothMPPProcessingRequired(hwc_layer_1_t &layer, hwc_layer_
     return needDoubleOperation;
 }
 
-bool ExynosDisplay::isSourceCropfSupported(hwc_layer_1_t layer)
+bool ExynosDisplay::isSourceCropfSupported(hwc_layer_1_t layer __unused)
 {
+#if 0
     private_handle_t *handle = private_handle_t::dynamicCast(layer.handle);
     unsigned int bpp = formatToBpp(handle->format);
 
     /* HACK: Disable overlay if the layer have float position or size */
-#if 0
     if ((isFormatRgb(handle->format) && (bpp == 32)) ||
          isFormatYUV420(handle->format))
         return true;
@@ -3275,6 +3284,7 @@ bool ExynosDisplay::isSourceCropfSupported(hwc_layer_1_t layer)
     return false;
 }
 
+#if 0
 bool ExynosDisplay::checkConfigChanged(struct decon_win_config_data &lastConfigData, struct decon_win_config_data &newConfigData)
 {
     for (size_t i = 0; i <= MAX_DECON_WIN; i++) {
@@ -3297,6 +3307,13 @@ bool ExynosDisplay::checkConfigChanged(struct decon_win_config_data &lastConfigD
     }
     return false;
 }
+#else
+bool ExynosDisplay::checkConfigChanged(struct decon_win_config_data &/*lastConfigData*/, struct decon_win_config_data &/*newConfigData*/)
+{
+    /* Force this check to always return true, otherwise we have unreliable retire fences */
+    return true;
+}
+#endif
 
 void ExynosDisplay::removeIDMA(decon_idma_type idma)
 {
@@ -3400,5 +3417,9 @@ int ExynosDisplay::checkConfigValidation(decon_win_config *config)
 
 int ExynosDisplay::setPowerMode(int mode)
 {
+#if defined(S3CFB_POWER_MODE)
     return ioctl(this->mDisplayFd, S3CFB_POWER_MODE, &mode);
+#else
+    return ioctl(this->mDisplayFd, FBIOBLANK, (mode == HWC_POWER_MODE_OFF ? FB_BLANK_POWERDOWN : FB_BLANK_UNBLANK));
+#endif
 }

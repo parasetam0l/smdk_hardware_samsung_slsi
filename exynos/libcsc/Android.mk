@@ -8,9 +8,11 @@ LOCAL_SRC_FILES := \
 	csc.c
 
 LOCAL_C_INCLUDES := \
-	hardware/samsung_slsi/$(TARGET_BOARD_PLATFORM)/include \
-	$(LOCAL_PATH)/../include \
-	$(LOCAL_PATH)/../libexynosutils
+    $(TOP)/hardware/samsung_slsi/exynos/include \
+    $(TOP)/hardware/samsung_slsi/exynos7570/include \
+	$(TOP)/hardware/samsung_slsi/exynos/libexynosutils \
+    $(TOP)/hardware/samsung_slsi/exynos/kernel-3.18-headers \
+	$(TOP)/hardware/samsung_slsi/$(TARGET_BOARD_PLATFORM)/include \
 
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
 

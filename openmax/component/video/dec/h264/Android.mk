@@ -62,7 +62,8 @@ LOCAL_C_INCLUDES := \
 	$(EXYNOS_OMX_COMPONENT)/video/dec \
 	$(EXYNOS_VIDEO_CODEC)/include \
 	$(TOP)/hardware/samsung_slsi/exynos/include \
-	$(TOP)/hardware/samsung_slsi/$(TARGET_BOARD_PLATFORM)/include
+	$(TOP)/hardware/samsung_slsi/$(TARGET_BOARD_PLATFORM)/include \
+	$(TOP)/hardware/samsung_slsi/exynos/kernel-3.18-headers
 
 ifeq ($(BOARD_USE_SKYPE_HD), true)
 LOCAL_CFLAGS += -DUSE_SKYPE_HD

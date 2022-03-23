@@ -22,7 +22,8 @@ LOCAL_SRC_FILES := \
 	exynos_mc.c
 
 LOCAL_C_INCLUDES := \
-	$(LOCAL_PATH)/../include \
+	$(TOP)/hardware/samsung_slsi/exynos/include \
+	$(TOP)/hardware/samsung_slsi/exynos/kernel-3.18-headers \
 	$(TOP)/hardware/samsung_slsi/exynos/libexynosutils
 
 LOCAL_SHARED_LIBRARIES := \

@@ -770,6 +770,7 @@ OMX_ERRORTYPE Exynos_OSAL_GetAndroidParameter(
             if ((pExynosPort->portDefinition.format.video.nFrameWidth *
                  pExynosPort->portDefinition.format.video.nFrameHeight * 3 / 2) > HD_SIZE) {  /* over than 720p */
                 pANBParams->nUsage |= GRALLOC_USAGE_PROTECTED_DPB;  /* try to use a CMA area */
+                //pANBParams->nUsage |= GRALLOC_USAGE_PROTECTED_DPB;  /* try to use a CMA area */
             }
         }
     }
