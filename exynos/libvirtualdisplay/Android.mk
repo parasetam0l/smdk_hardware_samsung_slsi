@@ -18,7 +18,7 @@ include $(CLEAR_VARS)
 LOCAL_PRELINK_MODULE := false
 
 LOCAL_SHARED_LIBRARIES := liblog libutils libcutils libexynosutils libexynosv4l2 \
-                          libhwcutils libdisplay libmpp libsync
+                          libhwcutils libexynosdisplay libmpp libsync
 
 LOCAL_CFLAGS += -DLOG_TAG=\"virtual\"
 LOCAL_CFLAGS += -DHLOG_CODE=3
@@ -37,7 +37,7 @@ LOCAL_C_INCLUDES := \
 ifeq ($(BOARD_USES_VPP), true)
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libvppdisplay
 else
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libdisplay
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libexynosdisplay
 endif
 
 LOCAL_SRC_FILES := \

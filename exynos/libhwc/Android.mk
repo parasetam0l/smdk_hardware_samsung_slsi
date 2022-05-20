@@ -29,8 +29,8 @@ LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_SHARED_LIBRARIES := liblog libcutils libEGL libGLESv1_CM libhardware \
 	libhardware_legacy libutils libsync \
-	libexynosv4l2 libexynosutils libhwcutils libdisplay libhdmi \
-	libmpp
+	libexynosv4l2 libexynosutils libhwcutils libexynosdisplay libhdmi \
+	libmpp libbfqio
 #libMcClient
 
 ifeq ($(BOARD_USES_FIMC), true)
@@ -110,7 +110,7 @@ LOCAL_C_INCLUDES += \
 ifeq ($(BOARD_USES_VPP), true)
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libvppdisplay
 else
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libdisplay
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libexynosdisplay
 endif
 
 LOCAL_SRC_FILES := ExynosHWC.cpp

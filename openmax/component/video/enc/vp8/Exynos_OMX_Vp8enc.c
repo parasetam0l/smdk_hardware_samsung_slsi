@@ -210,7 +210,7 @@ EXIT:
     return (bProfileSupport && bLevelSupport);
 }
 
-static OMX_U32 OMXVP8ProfileToProfileIDC(OMX_VIDEO_VP8PROFILETYPE eProfile)
+static __unused OMX_U32 OMXVP8ProfileToProfileIDC(OMX_VIDEO_VP8PROFILETYPE eProfile)
 {
     OMX_U32 ret;
 

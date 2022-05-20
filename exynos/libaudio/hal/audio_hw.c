@@ -144,7 +144,7 @@ static struct exynos_audio_usage *get_dangling_ausage_from_list(
     list_for_each(ausage_node, &adev->audio_usage_list) {
         ausage = node_to_item(ausage_node, struct exynos_audio_usage, node);
         if (ausage->usage_type == usagetype) {
-            if ((usagetype == AUSAGE_PLAYBACK)) {
+            if (usagetype == AUSAGE_PLAYBACK) {
                 if (ausage->stream.out != NULL &&
                     ausage->stream.out->ausage == AUSAGE_PLAYBACK_COMPR_OFFLOAD &&
                     ausage->stream.out->handle != handle) {
@@ -184,7 +184,7 @@ static struct exynos_audio_usage *get_active_ausage_from_list(
     list_for_each(ausage_node, &adev->audio_usage_list) {
         ausage = node_to_item(ausage_node, struct exynos_audio_usage, node);
         if (ausage->usage_type == usagetype) {
-            if ((usagetype == AUSAGE_PLAYBACK)) {
+            if (usagetype == AUSAGE_PLAYBACK) {
                 if (ausage != me && ausage->stream.out != NULL &&
                     ausage->stream.out->sstate != STATE_STANDBY) {
                     active_ausage = ausage;
@@ -257,7 +257,7 @@ static void syncup_ausage_from_list(
             ALOGRV("device-%s: Usage(%s) current-device(%s)'s new-device(%s) usage_type(%s)!",
                 __func__, usage_table[ausage->usage_id], device_path_table[cur_device],
                 device_path_table[new_device], (ausage->usage_type == AUSAGE_PLAYBACK ? "PLAYBACK" : "CAPTURE"));
-            if ((ausage->usage_type == AUSAGE_PLAYBACK)) {
+            if (ausage->usage_type == AUSAGE_PLAYBACK) {
                 if (cur_device != DEVICE_NONE && new_device == DEVICE_NONE) {
                     if (ausage == me || (ausage->stream.out != NULL &&
                         ausage->stream.out->sstate == STATE_STANDBY)) {
@@ -276,7 +276,7 @@ static void syncup_ausage_from_list(
                 }
             }
 
-            if ((ausage->usage_type == AUSAGE_CAPTURE)) {
+            if (ausage->usage_type == AUSAGE_CAPTURE) {
                 if (cur_device != DEVICE_NONE && new_device == DEVICE_NONE) {
                     if (ausage == me || (ausage->stream.in != NULL &&
                         ausage->stream.in->sstate == STATE_STANDBY)) {
@@ -417,7 +417,6 @@ static void clean_dangling_streams(
         void *stream)
 {
     struct exynos_audio_usage *dangling_ausage = NULL;
-    struct stream_out *out = NULL;
     struct stream_in *in = NULL;
     audio_usage_id_t id = AUSAGE_DEFAULT;
     audio_io_handle_t handle = 0;
@@ -474,8 +473,6 @@ static bool init_route(struct audio_device *adev)
 {
     struct route_info *trinfo = NULL;
     struct audio_route *ar = NULL;
-    const char *card_name = NULL;
-    int i, ret_stat = 0;
 
     /* Open Mixer & Initialize Route Path */
     trinfo = (struct route_info *)calloc(1, sizeof(struct route_info));
@@ -792,7 +789,7 @@ static int set_audio_route(
                     /* check whether input device is active */
                     active_ausage = get_active_ausage_from_list(adev, NULL, AUSAGE_CAPTURE);
                     if (active_ausage || isCallMode(adev->usage_amode)) {
-                        device_type_t in_device = DEVICE_NONE;
+                        in_device = DEVICE_NONE;
                         audio_usage_id_t in_usage_id = AUSAGE_DEFAULT;
 
                         ALOGD("%s-%s: ENABLE --Input Device for active usage ", usage_table[usage_id], __func__);
@@ -1085,7 +1082,6 @@ static int do_set_volume(struct stream_out *out, float left, float right)
 
 static int do_close_output_stream(struct stream_out *out)
 {
-    struct audio_device *adev = out->adev;
     int ret = 0;
 
     /* Close PCM/Compress Device */
@@ -1114,7 +1110,6 @@ static int do_close_output_stream(struct stream_out *out)
 
 static int do_open_output_stream(struct stream_out *out)
 {
-    struct audio_device *adev = out->adev;
     unsigned int sound_card;
     unsigned int sound_device;
     unsigned int flags;
@@ -2129,31 +2124,25 @@ static int out_get_render_position(
 }
 
 static int out_add_audio_effect(
-        const struct audio_stream *stream,
+        const struct audio_stream *stream __unused,
         effect_handle_t effect)
 {
-    struct stream_out *out = (struct stream_out *)stream;
-
     ALOGD("%s: exit with effect(%p)", __func__, effect);
     return 0;
 }
 
 static int out_remove_audio_effect(
-        const struct audio_stream *stream,
+        const struct audio_stream *stream __unused,
         effect_handle_t effect)
 {
-    struct stream_out *out = (struct stream_out *)stream;
-
     ALOGD("%s: exit with effect(%p)", __func__, effect);
     return 0;
 }
 
 static int out_get_next_write_timestamp(
-        const struct audio_stream_out *stream,
+        const struct audio_stream_out *stream __unused,
         int64_t *timestamp)
 {
-    struct stream_out *out = (struct stream_out *)stream;
-
     *timestamp = 0;
 
 //    ALOGV("%s: exit", __func__);
@@ -2395,9 +2384,8 @@ static uint32_t in_get_sample_rate(const struct audio_stream *stream)
     return in->sample_rate;
 }
 
-static int in_set_sample_rate(struct audio_stream *stream, uint32_t rate)
+static int in_set_sample_rate(struct audio_stream *stream __unused, uint32_t rate)
 {
-    struct stream_in *in = (struct stream_in *)stream;
     (void)rate;
 
     ALOGVV("%s-%s: exit with %u", usage_table[in->ausage], __func__, rate);
@@ -2432,9 +2420,8 @@ static audio_format_t in_get_format(const struct audio_stream *stream)
     return in->format;
 }
 
-static int in_set_format(struct audio_stream *stream, audio_format_t format)
+static int in_set_format(struct audio_stream *stream __unused, audio_format_t format)
 {
-    struct stream_in *in = (struct stream_in *)stream;
     (void)format;
 
     ALOGVV("%s-%s: enter with %d", usage_table[in->ausage], __func__, format);
@@ -2564,7 +2551,6 @@ static ssize_t in_read(
 {
     struct stream_in *in = (struct stream_in *)stream;
     struct audio_device *adev = in->adev;
-    size_t frames_rq = bytes / audio_stream_in_frame_size(stream);
     int ret = 0;
 
     ALOGVV("%s-%s: enter", usage_table[in->ausage], __func__);
@@ -2614,20 +2600,16 @@ static uint32_t in_get_input_frames_lost(struct audio_stream_in *stream)
     return 0;
 }
 
-static int in_add_audio_effect(const struct audio_stream *stream, effect_handle_t effect)
+static int in_add_audio_effect(const struct audio_stream *stream __unused, effect_handle_t effect)
 {
-    struct stream_in *in = (struct stream_in *)stream;
-
     ALOGD("%s: enter with effect(%p)", __func__, effect);
 
     ALOGD("%s: exit", __func__);
     return 0;
 }
 
-static int in_remove_audio_effect(const struct audio_stream *stream, effect_handle_t effect)
+static int in_remove_audio_effect(const struct audio_stream *stream __unused, effect_handle_t effect)
 {
-    struct stream_in *in = (struct stream_in *)stream;
-
     ALOGD("%s: enter with effect(%p)", __func__, effect);
 
     ALOGD("%s: exit", __func__);
@@ -3216,9 +3198,7 @@ static int adev_open_input_stream(
 {
     struct audio_device *adev = (struct audio_device *)dev;
     struct stream_in *in;
-    struct exynos_audio_usage *active_ausage;
     int channel_count = audio_channel_count_from_in_mask(config->channel_mask);
-    int ret = 0;
 
     ALOGD("device-%s: enter: io_handle (%d), sample_rate(%d) channel_mask(%#x) devices(%#x) flags(%#x) source(%d)",
           __func__, handle, config->sample_rate, config->channel_mask, devices, flags, source);
@@ -3303,13 +3283,6 @@ static int adev_open_input_stream(
 
     ALOGD("device-%s: Opened %s stream", __func__, usage_table[in->ausage]);
     return 0;
-
-err_open:
-    free(in);
-    *stream_in = NULL;
-
-    ALOGD("device-%s: Cannot open this stream as error(%d)", __func__, ret);
-    return ret;
 }
 
 static void adev_close_input_stream(
@@ -3341,10 +3314,8 @@ static void adev_close_input_stream(
     return;
 }
 
-static int adev_dump(const audio_hw_device_t *device, int fd)
+static int adev_dump(const audio_hw_device_t *device __unused, int fd)
 {
-    struct audio_device *adev = (struct audio_device *)device;
-
     ALOGV("device-%s: enter with file descriptor(%d)", __func__, fd);
 
     ALOGV("device-%s: exit - This function is not implemented yet!", __func__);

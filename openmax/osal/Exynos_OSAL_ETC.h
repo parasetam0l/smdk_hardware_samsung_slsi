@@ -30,9 +30,11 @@
 #include "OMX_Types.h"
 #include "Exynos_OMX_Def.h"
 
+#include <stdio.h>
 #ifdef PERFORMANCE_DEBUG
 #include <sys/time.h>
 #endif
+#include <sys/types.h>
 
 #define INT_TO_PTR(var) ((void *)(unsigned long)var)
 #define PTR_TO_INT(var) ((int)(unsigned long)var)

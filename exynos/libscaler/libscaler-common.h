@@ -79,7 +79,7 @@ template <typename T>
 static inline void swap(T &a, T &b) {
     T t = a;
     a = b;
-    b = a;
+    b = t;
 }
 
 static inline bool UnderOne16thScaling(unsigned int srcw, unsigned int srch,

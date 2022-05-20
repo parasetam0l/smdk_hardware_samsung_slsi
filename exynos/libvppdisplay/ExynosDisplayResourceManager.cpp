@@ -383,10 +383,8 @@ int ExynosDisplayResourceManager::assignResources(size_t numDisplays, hwc_displa
 
     int primary_previous_drm_dma = -1;
     int secondary_previous_drm_dma = -1;
-    int virtual_previous_drm_dma = -1;
     ExynosMPPModule *previousDRMInternalMPPPrimary = NULL;
     ExynosMPPModule *previousDRMInternalMPPSecondary = NULL;
-    ExynosMPPModule *previousDRMInternalMPPVirtual = NULL;
 
 #if defined(USES_DUAL_DISPLAY)
     if (mHwc->hdmi_hpd == false) {

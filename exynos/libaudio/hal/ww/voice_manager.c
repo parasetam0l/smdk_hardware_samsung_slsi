@@ -102,7 +102,7 @@ bool voice_get_mic_mute(struct voice_manager *voice)
 
 int voice_set_volume(struct voice_manager *voice, float volume)
 {
-    int vol, ret = 0;
+    int ret = 0;
 
     if (voice->state_call) {
         if (voice->rilc.ril_set_audio_volume)

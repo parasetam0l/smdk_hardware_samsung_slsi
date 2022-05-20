@@ -1,3 +1,5 @@
+ifeq ($(TARGET_SLSI_VARIANT),bsp)
+
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
@@ -83,3 +85,5 @@ endif
 ifeq ($(BOARD_USE_WMA_CODEC), true)
 include $(EXYNOS_OMX_COMPONENT)/audio/dec/wma/Android.mk
 endif
+
+endif # TARGET_SLSI_VARIANT

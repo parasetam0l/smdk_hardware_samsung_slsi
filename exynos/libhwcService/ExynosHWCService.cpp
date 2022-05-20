@@ -216,7 +216,7 @@ int ExynosHWCService::getWFDOutputTransform(void)
     return INVALID_OPERATION;
 }
 
-void ExynosHWCService::setHdmiResolution(int resolution, int s3dMode)
+void ExynosHWCService::setHdmiResolution(int resolution __unused, int s3dMode __unused)
 {
 #ifndef HDMI_INCAPABLE
     if (resolution == 0)
@@ -335,7 +335,7 @@ int ExynosHWCService::getPresentationMode()
 #endif
 }
 
-void ExynosHWCService::getHdmiResolution(uint32_t *width, uint32_t *height)
+void ExynosHWCService::getHdmiResolution(uint32_t *width __unused, uint32_t *height __unused)
 {
 #ifndef HDMI_INCAPABLE
     switch (mHWCCtx->mHdmiCurrentPreset) {

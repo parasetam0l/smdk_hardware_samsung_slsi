@@ -11,7 +11,13 @@ LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE := libOMX.Exynos.AVC.Encoder
 LOCAL_MODULE_RELATIVE_PATH := omx
 
-LOCAL_CFLAGS :=
+LOCAL_CFLAGS := \
+    -Wno-enum-conversion \
+    -Wno-unused-label \
+    -Wno-unused-parameter \
+    -Wno-unused-variable \
+    -Wno-parentheses-equality \
+    -Wno-undefined-inline
 
 ifeq ($(BOARD_USE_ANDROID), true)
 LOCAL_CFLAGS += -DUSE_ANDROID
@@ -46,10 +52,11 @@ LOCAL_ARM_MODE := arm
 LOCAL_STATIC_LIBRARIES := libExynosOMX_Venc libExynosOMX_OSAL libExynosOMX_Basecomponent \
 	libExynosVideoApi
 
-LOCAL_SHARED_LIBRARIES := libc libdl libcutils libutils libui \
+LOCAL_SHARED_LIBRARIES := libc libdl libcutils libutils libui liblog \
 	libExynosOMX_Resourcemanager libcsc libexynosv4l2 libion libhardware
 
 LOCAL_C_INCLUDES := \
+	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
 	$(EXYNOS_OMX_INC)/exynos \
 	$(EXYNOS_OMX_TOP)/osal \
 	$(EXYNOS_OMX_TOP)/core \
@@ -57,8 +64,10 @@ LOCAL_C_INCLUDES := \
 	$(EXYNOS_OMX_COMPONENT)/video/enc \
 	$(EXYNOS_VIDEO_CODEC)/include \
 	$(TOP)/hardware/samsung_slsi/exynos/include \
-	$(TOP)/hardware/samsung_slsi/$(TARGET_BOARD_PLATFORM)/include \
-	$(TOP)/hardware/samsung_slsi/exynos/kernel-3.18-headers
+	$(TOP)/hardware/samsung_slsi/$(TARGET_BOARD_PLATFORM)/include
+
+LOCAL_ADDITIONAL_DEPENDENCIES += \
+	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
 
 ifeq ($(BOARD_USE_SKYPE_HD), true)
 LOCAL_CFLAGS += -DUSE_SKYPE_HD

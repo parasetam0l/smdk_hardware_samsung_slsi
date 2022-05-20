@@ -16,7 +16,7 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_PRELINK_MODULE := false
-LOCAL_SHARED_LIBRARIES := liblog libutils libcutils libexynosutils libexynosv4l2 libhwcutils libdisplay libmpp
+LOCAL_SHARED_LIBRARIES := liblog libutils libcutils libexynosutils libexynosv4l2 libhwcutils libexynosdisplay libmpp
 
 LOCAL_CFLAGS += -DLOG_TAG=\"hdmi\"
 LOCAL_CFLAGS += -DHLOG_CODE=2
@@ -26,7 +26,7 @@ LOCAL_C_INCLUDES := \
 	$(TOP)/hardware/samsung_slsi/$(TARGET_BOARD_PLATFORM)/include \
 	$(LOCAL_PATH)/../include \
 	$(LOCAL_PATH)/../libhwcutils \
-	$(LOCAL_PATH)/../libdisplay \
+	$(LOCAL_PATH)/../libexynosdisplay \
 	$(LOCAL_PATH)/../libhwc \
 	$(TOP)/hardware/samsung_slsi/exynos/libexynosutils \
 	$(TOP)/hardware/samsung_slsi/$(TARGET_SOC)/libhwcmodule \

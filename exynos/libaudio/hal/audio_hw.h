@@ -43,7 +43,7 @@
 
 
 /* Mixer Path configuration file for working AudioHAL */
-#define VENDOR_MIXER_XML_PATH "/vendor/etc/mixer_paths.xml"
+#define VENDOR_MIXER_XML_PATH "/system/vendor/etc/mixer_paths.xml"
 /* Effect HAL and Visualizer library path for offload scenario */
 #define OFFLOAD_VISUALIZERHAL_PATH "/system/lib/soundfx/libexynosvisualizer.so"
 

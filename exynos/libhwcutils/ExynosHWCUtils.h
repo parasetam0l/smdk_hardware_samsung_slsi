@@ -137,7 +137,4 @@ int getS3DFormat(int preset);
 uint32_t hwcApiVersion(const hwc_composer_device_1_t* hwc);
 uint32_t hwcHeaderVersion(const hwc_composer_device_1_t* hwc);
 bool hwcHasApiVersion(const hwc_composer_device_1_t* hwc, uint32_t version);
-
-uint32_t halDataSpaceToV4L2ColorSpace(uint32_t data_space);
-unsigned int isNarrowRgb(int format, uint32_t data_space);
 #endif

@@ -17,7 +17,7 @@ include $(CLEAR_VARS)
 
 LOCAL_PRELINK_MODULE := false
 LOCAL_SHARED_LIBRARIES := liblog libutils libcutils libexynosutils \
-			  libsync libexynosv4l2 libhwcutils libdisplay \
+			  libsync libexynosv4l2 libhwcutils libexynosdisplay \
 			  libmpp
 
 LOCAL_C_INCLUDES := \
@@ -35,7 +35,7 @@ ifeq ($(BOARD_USES_VPP), true)
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libvppdisplay \
 	$(TOP)/hardware/samsung_slsi/$(TARGET_SOC)/libdisplaymodule
 else
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libdisplay
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libexynosdisplay
 endif
 
 LOCAL_SRC_FILES := \

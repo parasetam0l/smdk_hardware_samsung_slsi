@@ -1907,7 +1907,7 @@ OMX_ERRORTYPE Exynos_OMX_VideoDecodeGetExtensionIndex(
         goto EXIT;
     }
 
-#ifdef USE_STOREMETADATA
+#if 0 //def USE_STOREMETADATA
     if (Exynos_OSAL_Strcmp(cParameterName, EXYNOS_INDEX_PARAM_STORE_METADATA_BUFFER) == 0) {
         *pIndexType = (OMX_INDEXTYPE) OMX_IndexParamStoreMetaDataBuffer;
         goto EXIT;

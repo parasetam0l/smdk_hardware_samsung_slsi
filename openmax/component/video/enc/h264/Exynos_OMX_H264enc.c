@@ -251,13 +251,13 @@ static OMX_U32 OMXAVCProfileToProfileIDC(OMX_VIDEO_AVCPROFILETYPE profile)
 
     if (profile == OMX_VIDEO_AVCProfileBaseline)
         ret = 0;
-    else if ((EXYNOS_OMX_VIDEO_AVCPROFILETYPE)profile == OMX_VIDEO_AVCProfileConstrainedBaseline)
+    else if ((OMX_VIDEO_AVCPROFILEEXTTYPE)profile == OMX_VIDEO_AVCProfileConstrainedBaseline)
         ret = 1;
     else if (profile == OMX_VIDEO_AVCProfileMain)
         ret = 2;
     else if (profile == OMX_VIDEO_AVCProfileHigh)
         ret = 4;
-    else if ((EXYNOS_OMX_VIDEO_AVCPROFILETYPE)profile == OMX_VIDEO_AVCProfileConstrainedHigh)
+    else if ((OMX_VIDEO_AVCPROFILEEXTTYPE)profile == OMX_VIDEO_AVCProfileConstrainedHigh)
         ret = 17;
 
     return ret;

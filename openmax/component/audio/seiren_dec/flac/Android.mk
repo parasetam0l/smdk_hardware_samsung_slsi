@@ -11,13 +11,19 @@ LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE := libOMX.Exynos.FLAC.Decoder
 LOCAL_MODULE_RELATIVE_PATH := omx
 
-LOCAL_CFLAGS :=
+LOCAL_CFLAGS := \
+    -Wno-enum-conversion \
+    -Wno-unused-label \
+    -Wno-unused-parameter \
+    -Wno-unused-variable \
+    -Wno-parentheses-equality \
+    -Wno-undefined-inline
 
 LOCAL_ARM_MODE := arm
 
 LOCAL_STATIC_LIBRARIES := libExynosOMX_Adec libExynosOMX_OSAL libExynosOMX_Basecomponent \
 	libseirenhw
-LOCAL_SHARED_LIBRARIES := libc libdl libcutils libutils libui \
+LOCAL_SHARED_LIBRARIES := libc libdl libcutils libutils libui liblog \
 	libExynosOMX_Resourcemanager
 
 LOCAL_C_INCLUDES := \

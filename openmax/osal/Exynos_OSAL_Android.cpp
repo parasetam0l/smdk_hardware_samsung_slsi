@@ -45,6 +45,7 @@
 #include <ion/ion.h>
 #include "exynos_ion.h"
 
+#include "Exynos_OSAL_BufferMapper.h"
 #include "Exynos_OSAL_Mutex.h"
 #include "Exynos_OSAL_Semaphore.h"
 #include "Exynos_OMX_Baseport.h"
@@ -164,12 +165,11 @@ OMX_ERRORTYPE Exynos_OSAL_LockANBHandle(
     FunctionIn();
 
     OMX_ERRORTYPE ret = OMX_ErrorNone;
-    GraphicBufferMapper &mapper = GraphicBufferMapper::get();
+    BufferMapper &mapper = BufferMapper::get();
     buffer_handle_t bufferHandle = (buffer_handle_t) handle;
 #ifdef USE_DMA_BUF
     private_handle_t *priv_hnd = (private_handle_t *) bufferHandle;
 #endif
-    Rect bounds((uint32_t)width, (uint32_t)height);
     ExynosVideoPlane *vplanes = (ExynosVideoPlane *) planes;
     void *vaddr[MAX_BUFFER_PLANE] = {NULL, };
 
@@ -202,7 +202,7 @@ OMX_ERRORTYPE Exynos_OSAL_LockANBHandle(
         break;
     }
 
-    if (mapper.lock(bufferHandle, usage, bounds, vaddr) != 0) {
+    if (mapper.lock(bufferHandle, usage, width, height, vaddr) != 0) {
         Exynos_OSAL_Log(EXYNOS_LOG_ERROR, "%s: mapper.lock() fail", __func__);
         ret = OMX_ErrorUndefined;
         goto EXIT;
@@ -249,7 +249,7 @@ OMX_ERRORTYPE Exynos_OSAL_UnlockANBHandle(OMX_IN OMX_PTR handle)
     FunctionIn();
 
     OMX_ERRORTYPE ret = OMX_ErrorNone;
-    GraphicBufferMapper &mapper = GraphicBufferMapper::get();
+    BufferMapper &mapper = BufferMapper::get();
     buffer_handle_t bufferHandle = (buffer_handle_t) handle;
 
     Exynos_OSAL_Log(EXYNOS_LOG_TRACE, "%s: handle: 0x%x", __func__, handle);
@@ -770,7 +770,6 @@ OMX_ERRORTYPE Exynos_OSAL_GetAndroidParameter(
             if ((pExynosPort->portDefinition.format.video.nFrameWidth *
                  pExynosPort->portDefinition.format.video.nFrameHeight * 3 / 2) > HD_SIZE) {  /* over than 720p */
                 pANBParams->nUsage |= GRALLOC_USAGE_PROTECTED_DPB;  /* try to use a CMA area */
-                //pANBParams->nUsage |= GRALLOC_USAGE_PROTECTED_DPB;  /* try to use a CMA area */
             }
         }
     }
@@ -1038,6 +1037,12 @@ OMX_ERRORTYPE Exynos_OSAL_GetInfoFromMetaData(OMX_IN OMX_BYTE pBuffer,
  * ---------------------------------------------------------------
  * | kMetadataBufferTypeGrallocSource |     buffer_handle_t      |
  * ---------------------------------------------------------------
+ *
+ * If MetadataBufferType is kMetadataBufferTypeNativeHandleSource, then
+ * ---------------------------------------------------------------
+ * |  kMetadataBufferTypeNativeHandleSource | native_handle_t*   |
+ * ---------------------------------------------------------------
+ *
  */
 
     /* MetadataBufferType */
@@ -1073,6 +1078,23 @@ OMX_ERRORTYPE Exynos_OSAL_GetInfoFromMetaData(OMX_IN OMX_BYTE pBuffer,
             ret = OMX_ErrorBadParameter;
         }
     }
+        break;
+    case kMetadataBufferTypeNativeHandleSource:
+    {
+        native_handle_t*    pNativeHandle;
+
+        /* native_handle_t */
+        Exynos_OSAL_Memcpy(&pNativeHandle, pBuffer + sizeof(MetadataBufferType), sizeof(native_handle_t*));
+
+        ppBuf[0] = INT_TO_PTR(pNativeHandle->data[0]);
+        ppBuf[1] = INT_TO_PTR(pNativeHandle->data[1]);
+
+        if (ppBuf[0] == NULL || ppBuf[1] == NULL) {
+            Exynos_OSAL_Log(EXYNOS_LOG_WARNING, "NativeHandle's fd is NULL");
+            ret = OMX_ErrorBadParameter;
+        }
+    }
+
         break;
     default:
     {

@@ -375,7 +375,7 @@ public:
         return (uint32_t)reply.readInt32();
     }
 
-    virtual void setHWCCtl(int ctrl, int val) {
+    virtual void setHWCCtl(int ctrl __unused, int val __unused) {
     };
 
     virtual void setBootFinished()
@@ -392,7 +392,7 @@ public:
         remote()->transact(NOTIFY_PSR_EXIT, data, &reply);
     }
 
-    virtual void setHWCDebug(int debug)
+    virtual void setHWCDebug(int debug __unused)
     {
         Parcel data, reply;
         data.writeInterfaceToken(IExynosHWCService::getInterfaceDescriptor());

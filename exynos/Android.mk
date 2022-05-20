@@ -61,7 +61,7 @@ else
 ifeq ($(BOARD_USES_VPP), true)
 common_exynos_dirs += libvppdisplay
 else
-common_exynos_dirs += libdisplay
+common_exynos_dirs += libexynosdisplay
 endif
 endif
 
@@ -123,14 +123,14 @@ common_exynos_dirs += \
 	libg2d
 endif
 
-ifeq ($(BOARD_BACK_CAMERA_USES_EXTERNAL_CAMERA), true)
-common_exynos_dirs += \
-	libcamera_external
-else
-ifeq ($(BOARD_FRONT_CAMERA_USES_EXTERNAL_CAMERA), true)
-common_exynos_dirs += \
-	libcamera_external
-endif
-endif
+#ifeq ($(BOARD_BACK_CAMERA_USES_EXTERNAL_CAMERA), true)
+#common_exynos_dirs += \
+#	libcamera_external
+#else
+#ifeq ($(BOARD_FRONT_CAMERA_USES_EXTERNAL_CAMERA), true)
+#common_exynos_dirs += \
+#	libcamera_external
+#endif
+#endif
 
 include $(call all-named-subdir-makefiles,$(common_exynos_dirs))

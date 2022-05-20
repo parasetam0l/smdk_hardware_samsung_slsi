@@ -24,7 +24,7 @@
  *   2012.02.20 : Create
  */
 
-#include <utils/Log.h>
+#include <android/log.h>
 #include <cutils/properties.h>
 
 #include "Exynos_OSAL_Log.h"

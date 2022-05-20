@@ -38,8 +38,6 @@
 extern "C" {
 #endif
 
-
-
 OMX_ERRORTYPE Exynos_OSAL_GetAndroidParameter(OMX_IN OMX_HANDLETYPE hComponent,
                                           OMX_IN OMX_INDEXTYPE nIndex,
                                           OMX_INOUT OMX_PTR ComponentParameterStructure);

@@ -588,7 +588,7 @@ void ExynosDisplay::freeMPP()
 {
 }
 
-void ExynosDisplay::doPreProcessing(hwc_display_contents_1_t* contents)
+void ExynosDisplay::doPreProcessing(hwc_display_contents_1_t* contents __unused)
 {
     mPreProcessedInfo.mHasDrmSurface = false;
     mForceOverlayLayerIndex = -1;

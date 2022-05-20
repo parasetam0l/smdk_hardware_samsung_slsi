@@ -17,7 +17,7 @@ include $(CLEAR_VARS)
 
 LOCAL_PRELINK_MODULE := false
 LOCAL_SHARED_LIBRARIES := liblog libutils libcutils libexynosutils \
-  libexynosv4l2 libsync libhwcutils libdisplay libmpp
+  libexynosv4l2 libsync libhwcutils libexynosdisplay libmpp
 
 LOCAL_CFLAGS += -DLOG_TAG=\"hdmi\"
 
@@ -33,17 +33,8 @@ LOCAL_C_INCLUDES := \
 	$(TOP)/hardware/samsung_slsi/$(TARGET_SOC)/libhwcutilsmodule \
 	$(TOP)/hardware/samsung_slsi/$(TARGET_SOC)/libdisplaymodule \
 	$(TOP)/hardware/samsung_slsi/exynos/libmpp \
-	$(TOP)/system/core/libsync/include
-
-ifeq ($(filter 3.10, $(TARGET_LINUX_KERNEL_VERSION)), 3.10)
-LOCAL_C_INCLUDES += $(TOP)/hardware/samsung_slsi/exynos/kernel-3.10-headers
-else
-ifeq ($(filter 3.18, $(TARGET_LINUX_KERNEL_VERSION)), 3.18)
-LOCAL_C_INCLUDES += $(TOP)/hardware/samsung_slsi/exynos/kernel-3.18-headers
-else
-LOCAL_C_INCLUDES += $(TOP)/hardware/samsung_slsi/exynos/kernel-3.4-headers
-endif
-endif
+	$(TOP)/system/core/libsync/include \
+	$(TOP)/hardware/samsung_slsi/exynos/kernel-3.18-headers
 
 LOCAL_SRC_FILES := \
 	ExynosExternalDisplay.cpp dv_timings.c

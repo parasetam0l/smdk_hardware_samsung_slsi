@@ -51,7 +51,7 @@ LOCAL_C_INCLUDES := \
 ifeq ($(BOARD_USES_VPP), true)
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libvppdisplay
 else
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libdisplay
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libexynosdisplay
 endif
 
 ifeq ($(BOARD_HDMI_INCAPABLE), true)

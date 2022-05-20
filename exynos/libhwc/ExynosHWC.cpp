@@ -15,6 +15,7 @@
  */
 #define ATRACE_TAG ATRACE_TAG_GRAPHICS
 
+#include <bfqio/bfqio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -441,8 +442,8 @@ int exynos5_query(struct hwc_composer_device_1* dev, int what, int *value)
 
     switch (what) {
     case HWC_BACKGROUND_LAYER_SUPPORTED:
-        // we support the background layer
-        value[0] = 1;
+        // we do not support the background layer
+        value[0] = 0;
         break;
     case HWC_VSYNC_PERIOD:
         // vsync period in nanosecond
@@ -521,8 +522,8 @@ void handle_hdmi_uevent(struct exynos5_hwc_composer_device_1_t *pdev,
         pdev->procs->hotplug(pdev->procs, HWC_DISPLAY_EXTERNAL, pdev->hdmi_hpd);
 }
 
-void handle_tui_uevent(struct exynos5_hwc_composer_device_1_t *pdev,
-        const char *buff, int len)
+void handle_tui_uevent(struct exynos5_hwc_composer_device_1_t *pdev __unused,
+        const char *buff __unused, int len __unused)
 {
 #ifdef USES_VPP
 #ifdef DISABLE_IDMA_SECURE
@@ -626,7 +627,12 @@ void *hwc_vsync_thread(void *data)
     char uevent_desc[4096];
     memset(uevent_desc, 0, sizeof(uevent_desc));
 
-    setpriority(PRIO_PROCESS, 0, HAL_PRIORITY_URGENT_DISPLAY);
+    struct sched_param sched_param = {0};
+    sched_param.sched_priority = 5;
+    if (sched_setscheduler(gettid(), SCHED_FIFO, &sched_param) != 0) {
+        ALOGE("Couldn't set SCHED_FIFO for hwc_vsync");
+    }
+    android_set_rt_ioprio(0, 1);
 
     uevent_init();
 
@@ -699,7 +705,6 @@ void *hwc_vsync_thread(void *data)
 int exynos5_blank(struct hwc_composer_device_1 *dev, int disp, int blank)
 {
     ATRACE_CALL();
-    int fence = 0;
     struct exynos5_hwc_composer_device_1_t *pdev =
             (struct exynos5_hwc_composer_device_1_t *)dev;
 #ifdef SKIP_DISPLAY_BLANK_CTRL
@@ -735,10 +740,13 @@ int exynos5_blank(struct hwc_composer_device_1 *dev, int disp, int blank)
 #endif
         pdev->primaryDisplay->mBlanked = !!blank;
 
-        if (pthread_kill(pdev->update_stat_thread, 0) != ESRCH) { //check if the thread is alive
-           if (fb_blank == FB_BLANK_POWERDOWN) {
-                pdev->update_stat_thread_flag = false;
-                pthread_join(pdev->update_stat_thread, 0);
+        /* Check if the thread is enabled before calling pthread_kill as we will seg fault otherwise */
+        if(pdev->update_stat_thread_flag == true) {
+            if (pthread_kill(pdev->update_stat_thread, 0) != ESRCH) { //check if the thread is alive
+               if (fb_blank == FB_BLANK_POWERDOWN) {
+                    pdev->update_stat_thread_flag = false;
+                    pthread_join(pdev->update_stat_thread, 0);
+                }
             }
         } else { // thread is not alive
             if (fb_blank == FB_BLANK_UNBLANK && pdev->hwc_ctrl.dynamic_recomp_mode == true)
@@ -963,7 +971,7 @@ int exynos5_getDisplayAttributes(struct hwc_composer_device_1 *dev,
             values[i] = pdev->secondaryDisplay->getDisplayAttributes(attributes[i]);
 #else
         if (disp == HWC_DISPLAY_PRIMARY)
-            values[i] = pdev->primaryDisplay->getDisplayAttributes(attributes[i]);
+            values[i] = pdev->primaryDisplay->getDisplayAttributes(attributes[i], config);
 #endif
         else if (disp == HWC_DISPLAY_EXTERNAL) {
             if (hwcHasApiVersion((hwc_composer_device_1_t*)dev, HWC_DEVICE_API_VERSION_1_4))
@@ -1042,7 +1050,7 @@ int exynos_setActiveConfig(struct hwc_composer_device_1* dev, int disp, int inde
     return -1;
 }
 
-int exynos_setCursorPositionAsync(struct hwc_composer_device_1 *dev, int disp, int x_pos, int y_pos)
+int exynos_setCursorPositionAsync(struct hwc_composer_device_1 *dev __unused, int disp __unused, int x_pos __unused, int y_pos __unused)
 {
     return 0;
 }
@@ -1050,12 +1058,16 @@ int exynos_setCursorPositionAsync(struct hwc_composer_device_1 *dev, int disp, i
 int exynos_setPowerMode(struct hwc_composer_device_1* dev, int disp, int mode)
 {
     ATRACE_CALL();
-    int fence = 0;
     struct exynos5_hwc_composer_device_1_t *pdev =
             (struct exynos5_hwc_composer_device_1_t *)dev;
 #ifdef SKIP_DISPLAY_BLANK_CTRL
     return 0;
 #endif
+#ifdef USES_VPP
+    char aodOn[3] = "on";
+    char aodOff[4] = "off";
+#endif
+
     ALOGI("%s:: disp(%d), mode(%d)", __func__, disp, mode);
     int fb_blank = 0;
     int blank = 0;
@@ -1071,16 +1083,35 @@ int exynos_setPowerMode(struct hwc_composer_device_1* dev, int disp, int mode)
     case HWC_DISPLAY_PRIMARY: {
 #ifdef USES_VPP
         if ((mode == HWC_POWER_MODE_DOZE) || (mode == HWC_POWER_MODE_DOZE_SUSPEND)) {
-            if (pdev->primaryDisplay->mBlanked == 0) {
-                fb_blank = FB_BLANK_POWERDOWN;
+            if (pdev->primaryDisplay->mBlanked == 1) {
+                fb_blank = FB_BLANK_UNBLANK;
                 int err = ioctl(pdev->primaryDisplay->mDisplayFd, FBIOBLANK, fb_blank);
                 if (err < 0) {
                     ALOGE("blank ioctl failed: %s, mode(%d)", strerror(errno), mode);
                     return -errno;
                 }
             }
-            pdev->primaryDisplay->mBlanked = 1;
+
+            //Lazy AOD approach for solis (SM-R760) by parasetam0l
+            int aodFd = open("/sys/devices/14800000.dsim/aod", O_RDWR);
+            if (aodFd == -1 ) {
+                ALOGE("failed to open aod control file");
+            } else {
+                write(aodFd, aodOn, strlen(aodOn));
+                close(aodFd);
+            }
+
+            pdev->primaryDisplay->mBlanked = 0;
             return pdev->primaryDisplay->setPowerMode(mode);
+        }
+
+        //Lazy AOD approach for solis (SM-R760) by parasetam0l
+        int aodFd = open("/sys/devices/14800000.dsim/aod", O_RDWR);
+        if (aodFd == -1 ) {
+            ALOGE("failed to open aod control file");
+        } else {
+            write(aodFd, aodOff, strlen(aodOff));
+            close(aodFd);
         }
 #endif
         if (fb_blank == FB_BLANK_POWERDOWN) {
@@ -1113,10 +1144,13 @@ int exynos_setPowerMode(struct hwc_composer_device_1* dev, int disp, int mode)
 #endif
         pdev->primaryDisplay->mBlanked = !!blank;
 
-        if (pthread_kill(pdev->update_stat_thread, 0) != ESRCH) { //check if the thread is alive
-           if (fb_blank == FB_BLANK_POWERDOWN) {
-                pdev->update_stat_thread_flag = false;
-                pthread_join(pdev->update_stat_thread, 0);
+        /* Check if the thread is enabled before calling pthread_kill as we will seg fault otherwise */
+        if(pdev->update_stat_thread_flag == true) {
+            if (pthread_kill(pdev->update_stat_thread, 0) != ESRCH) { //check if the thread is alive
+               if (fb_blank == FB_BLANK_POWERDOWN) {
+                    pdev->update_stat_thread_flag = false;
+                    pthread_join(pdev->update_stat_thread, 0);
+                }
             }
         } else { // thread is not alive
             if (fb_blank == FB_BLANK_UNBLANK && pdev->hwc_ctrl.dynamic_recomp_mode == true)
@@ -1195,7 +1229,6 @@ int exynos5_open(const struct hw_module_t *module, const char *name,
 {
     int ret = 0;
     int refreshRate;
-    int sw_fd;
 
     if (strcmp(name, HWC_HARDWARE_COMPOSER)) {
         return -EINVAL;
@@ -1569,19 +1602,19 @@ int exynos5_close(hw_device_t *device)
 }
 
 static struct hw_module_methods_t exynos5_hwc_module_methods = {
-    open: exynos5_open,
+    .open = exynos5_open,
 };
 
 hwc_module_t HAL_MODULE_INFO_SYM = {
-    common: {
-        tag: HARDWARE_MODULE_TAG,
-        module_api_version: HWC_MODULE_API_VERSION_0_1,
-        hal_api_version: HARDWARE_HAL_API_VERSION,
-        id: HWC_HARDWARE_MODULE_ID,
-        name: "Samsung exynos5 hwcomposer module",
-        author: "Samsung LSI",
-        methods: &exynos5_hwc_module_methods,
-        dso: 0,
-        reserved: {0},
+    .common = {
+        .tag = HARDWARE_MODULE_TAG,
+        .module_api_version = HWC_MODULE_API_VERSION_0_1,
+        .hal_api_version = HARDWARE_HAL_API_VERSION,
+        .id = HWC_HARDWARE_MODULE_ID,
+        .name = "Samsung exynos5 hwcomposer module",
+        .author = "Samsung LSI",
+        .methods = &exynos5_hwc_module_methods,
+        .dso = 0,
+        .reserved = {0},
     }
 };

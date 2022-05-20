@@ -175,7 +175,7 @@ static int gralloc_map(gralloc_module_t const* module, buffer_handle_t handle)
     return 0;
 }
 
-static int gralloc_unmap(gralloc_module_t const* module, buffer_handle_t handle)
+static int gralloc_unmap(gralloc_module_t const* module __unused, buffer_handle_t handle)
 {
     private_handle_t* hnd = (private_handle_t*)handle;
     size_t chroma_vstride = 0;
@@ -262,8 +262,6 @@ int grallocUnmap(gralloc_module_t const* module, private_handle_t *hnd)
     return gralloc_unmap(module, hnd);
 }
 
-static pthread_mutex_t sMapLock = PTHREAD_MUTEX_INITIALIZER;
-
 /*****************************************************************************/
 
 int gralloc_register_buffer(gralloc_module_t const* module,
@@ -320,8 +318,8 @@ int gralloc_unregister_buffer(gralloc_module_t const* module,
 }
 
 int gralloc_lock(gralloc_module_t const* module,
-                 buffer_handle_t handle, int usage,
-                 int l, int t, int w, int h,
+                 buffer_handle_t handle, int usage __unused,
+                 int l __unused, int t __unused, int w __unused, int h __unused,
                  void** vaddr)
 {
     // this is called when a buffer is being locked for software
@@ -431,9 +429,9 @@ int gralloc_unlock(gralloc_module_t const* module,
     return 0;
 }
 
-int gralloc_lock_ycbcr(gralloc_module_t const* module,
+int gralloc_lock_ycbcr(gralloc_module_t const* module __unused,
                         buffer_handle_t handle, int usage,
-                        int l, int t, int w, int h,
+                        int l __unused, int t __unused, int w __unused, int h __unused,
                         android_ycbcr *ycbcr)
 {
     if (private_handle_t::validate(handle) < 0)
